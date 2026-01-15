@@ -1,5 +1,3 @@
-# minijuego-tetris
-
 import turtle
 import random
 import time
@@ -10,10 +8,19 @@ TAM = 20
 COLUMNAS = ANCHO // TAM
 FILAS = ALTO // TAM
 
-VELOCIDAD_CAIDA = 0.12  # más rápido que antes
-VELOCIDAD_MOV = 0.03    # movimiento lateral más ágil
+VELOCIDAD_BASE = 0.45
+VELOCIDAD_MOV = 0.08
 
-estado = "MENU"  # empieza en menú
+MAX_NIVELES = 5
+TIEMPO_POR_NIVEL = 25
+
+estado = "MENU"
+modo = None
+
+nivel = 1
+velocidad_caida = VELOCIDAD_BASE
+tiempo_inicio = 0
+
 ultimo_tiempo = time.time()
 ultimo_mov = time.time()
 
@@ -21,12 +28,11 @@ mov_izq = False
 mov_der = False
 
 puntaje = 0
-
 tablero = [[0 for _ in range(COLUMNAS)] for _ in range(FILAS)]
 
 pantalla = turtle.Screen()
 pantalla.setup(500, 650)
-pantalla.bgcolor("#1c1c1c")  # fondo gris oscuro
+pantalla.bgcolor("#1c1c1c")
 pantalla.title("Tetris - Turtle")
 pantalla.tracer(0)
 
@@ -37,9 +43,9 @@ dib.speed(0)
 
 # ---------------- PIEZAS ----------------
 FORMAS = [
-    [[1, 1, 1, 1]],           # I
-    [[1, 1], [1, 1]],         # O
-    [[0, 1, 0], [1, 1, 1]]    # T
+    [[1, 1, 1, 1]],
+    [[1, 1], [1, 1]],
+    [[0, 1, 0], [1, 1, 1]]
 ]
 
 COLORES = ["cyan", "yellow", "purple"]
@@ -75,9 +81,6 @@ class Juego:
         for y, fila in enumerate(self.pieza.forma):
             for x, celda in enumerate(fila):
                 if celda:
-                    if self.pieza.y - y >= FILAS - 1:
-                        estado = "GAME_OVER"
-                        return
                     tablero[self.pieza.y - y][self.pieza.x + x] = self.pieza.color
         limpiar_lineas()
         self.pieza = Pieza()
@@ -144,10 +147,15 @@ def dibujar_cuadricula():
 def dibujar_menu():
     dib.clear()
     dib.color("white")
-    dib.goto(0, 50)
+    dib.goto(0, 80)
     dib.write("TETRIS", align="center", font=("Arial", 32, "bold"))
-    dib.goto(0, -20)
-    dib.write("PRESS ENTER TO PLAY", align="center", font=("Arial", 16, "normal"))
+
+    dib.goto(0, 10)
+    dib.write("1 - MODO ARCADE", align="center", font=("Arial", 16, "normal"))
+
+    dib.goto(0, -30)
+    dib.write("2 - JUGAR POR NIVEL", align="center", font=("Arial", 16, "normal"))
+
     pantalla.update()
 
 def dibujar_juego():
@@ -162,106 +170,91 @@ def dibujar_juego():
     for y, fila in enumerate(juego.pieza.forma):
         for x, celda in enumerate(fila):
             if celda:
-                dibujar_celda(
-                    juego.pieza.x + x,
-                    juego.pieza.y - y,
-                    juego.pieza.color
-                )
+                dibujar_celda(juego.pieza.x + x, juego.pieza.y - y, juego.pieza.color)
 
     dib.goto(160, 250)
     dib.color("white")
-    dib.write(f"Puntaje:\n{puntaje}", align="center", font=("Arial", 14, "bold"))
+    dib.write(f"Puntaje:\n{puntaje}", align="center", font=("Arial", 12, "bold"))
+
+    if modo == "NIVEL":
+        tiempo_restante = TIEMPO_POR_NIVEL - int(time.time() - tiempo_inicio)
+        if tiempo_restante < 0:
+            tiempo_restante = 0
+
+        dib.goto(160, 210)
+        dib.color("orange")
+        dib.write(f"Nivel: {nivel}", align="center", font=("Arial", 12, "bold"))
+
+        dib.goto(160, 180)
+        dib.write(f"Tiempo: {tiempo_restante}s", align="center", font=("Arial", 12, "bold"))
+
+    pantalla.update()
+
+def dibujar_nivel_completado():
+    dib.clear()
+    dib.color("green")
+    dib.goto(0, 40)
+    dib.write("NIVEL COMPLETADO", align="center", font=("Arial", 24, "bold"))
+
+    dib.goto(0, -10)
+    dib.write("Presiona ENTER", align="center", font=("Arial", 14, "normal"))
     pantalla.update()
 
 def dibujar_game_over():
     dib.clear()
     dib.color("red")
-    dib.goto(0, 50)
+    dib.goto(0, 40)
     dib.write("GAME OVER", align="center", font=("Arial", 32, "bold"))
-
-    dib.goto(0, -20)
-    dib.color("white")
-    dib.write(f"Puntaje final: {puntaje}", align="center", font=("Arial", 16, "normal"))
-
-    dib.goto(0, -60)
-    dib.write("Presiona ESPACIO", align="center", font=("Arial", 12, "normal"))
-    dib.goto(0, -80)
-    dib.write("si desea reiniciar", align="center", font=("Arial", 12, "normal"))
     pantalla.update()
 
 # ---------------- CONTROLES ----------------
-def presionar_izq():
-    global mov_izq
-    if estado == "JUGANDO":
-        mov_izq = True
-
-def soltar_izq():
-    global mov_izq
-    mov_izq = False
-
-def presionar_der():
-    global mov_der
-    if estado == "JUGANDO":
-        mov_der = True
-
-def soltar_der():
-    global mov_der
-    mov_der = False
-
-def bajar():
-    if estado == "JUGANDO":
-        juego.bajar()
-
-def rotar():
-    if estado == "JUGANDO":
-        juego.rotar()
-
-def reiniciar():
-    global tablero, puntaje, estado, juego
-    tablero = [[0 for _ in range(COLUMNAS)] for _ in range(FILAS)]
-    puntaje = 0
-    juego = Juego()
+def iniciar_arcade():
+    global modo, estado
+    modo = "ARCADE"
     estado = "JUGANDO"
 
-def iniciar_juego():
-    global estado
+def iniciar_niveles():
+    global modo, estado, nivel, velocidad_caida, tiempo_inicio
+    modo = "NIVEL"
+    nivel = 1
+    velocidad_caida = VELOCIDAD_BASE
+    tiempo_inicio = time.time()
     estado = "JUGANDO"
+
+pantalla.onkeypress(iniciar_arcade, "1")
+pantalla.onkeypress(iniciar_niveles, "2")
+
+pantalla.onkeypress(lambda: juego.mover(-1), "Left")
+pantalla.onkeypress(lambda: juego.mover(1), "Right")
+pantalla.onkeypress(lambda: juego.bajar(), "Down")
+pantalla.onkeypress(lambda: juego.rotar(), "Up")
 
 pantalla.listen()
-pantalla.onkeypress(presionar_izq, "Left")
-pantalla.onkeyrelease(soltar_izq, "Left")
-pantalla.onkeypress(presionar_der, "Right")
-pantalla.onkeyrelease(soltar_der, "Right")
-pantalla.onkey(bajar, "Down")
-pantalla.onkey(rotar, "Up")
-pantalla.onkey(reiniciar, "space")
-pantalla.onkey(iniciar_juego, "Return")  # ENTER inicia el juego
 
 # ---------------- LOOP ----------------
 juego = Juego()
 
 def loop():
-    global ultimo_tiempo, ultimo_mov
+    global ultimo_tiempo, tiempo_inicio, estado, nivel, velocidad_caida
 
     ahora = time.time()
 
     if estado == "MENU":
         dibujar_menu()
+
     elif estado == "JUGANDO":
-        if ahora - ultimo_tiempo > VELOCIDAD_CAIDA:
+        if ahora - ultimo_tiempo > velocidad_caida:
             juego.bajar()
             ultimo_tiempo = ahora
 
-        if ahora - ultimo_mov > VELOCIDAD_MOV:
-            if mov_izq:
-                juego.mover(-1)
-            if mov_der:
-                juego.mover(1)
-            ultimo_mov = ahora
+        if modo == "NIVEL":
+            if ahora - tiempo_inicio >= TIEMPO_POR_NIVEL:
+                estado = "NIVEL_COMPLETADO"
 
         dibujar_juego()
-    elif estado == "GAME_OVER":
-        dibujar_game_over()
+
+    elif estado == "NIVEL_COMPLETADO":
+        dibujar_nivel_completado()
 
     pantalla.ontimer(loop, 16)
 
