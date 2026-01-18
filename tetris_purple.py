@@ -1,6 +1,12 @@
 import turtle
 import random
 import time
+import pygame
+pygame.mixer.init()
+
+
+
+
 
 # ---------------- CONFIGURACIÓN ----------------
 ANCHO, ALTO = 300, 600
@@ -22,33 +28,59 @@ velocidad_caida = VELOCIDAD_BASE
 tiempo_inicio = 0
 
 ultimo_tiempo = time.time()
-ultimo_mov = time.time()
-
-mov_izq = False
-mov_der = False
 
 puntaje = 0
 tablero = [[0 for _ in range(COLUMNAS)] for _ in range(FILAS)]
 
+pygame.mixer.pre_init(44100, -16, 2, 512)
+pygame.mixer.init()
+pygame.mixer.music.set_volume(0.5)
+
+
+
+# ---------------- PANTALLA ----------------
 pantalla = turtle.Screen()
 pantalla.setup(500, 650)
 pantalla.bgcolor("#1c1c1c")
 pantalla.title("Tetris - Turtle")
 pantalla.tracer(0)
 
+pygame.mixer.init()
+
+def iniciar_musica():
+    pygame.mixer.music.load("musica.wav")
+    pygame.mixer.music.set_volume(0.4)
+    pygame.mixer.music.play(-1)
+
+def detener_musica():
+    pygame.mixer.music.stop()
+
+
+
 dib = turtle.Turtle()
 dib.hideturtle()
 dib.penup()
 dib.speed(0)
 
+def iniciar_musica():
+    pygame.mixer.music.load("musica.mp3")
+    pygame.mixer.music.set_volume(0.4)
+    pygame.mixer.music.play(-1)
+
+def detener_musica():
+    pygame.mixer.music.stop()
+
+
 # ---------------- PIEZAS ----------------
 FORMAS = [
     [[1, 1, 1, 1]],
     [[1, 1], [1, 1]],
-    [[0, 1, 0], [1, 1, 1]]
+    [[0, 1, 0], [1, 1, 1]],
+    [[1, 0, 0], [1, 1, 1]],
+    [[0, 0, 1], [1, 1, 1]]
 ]
 
-COLORES = ["cyan", "yellow", "purple"]
+COLORES = ["cyan", "yellow", "purple", "blue", "orange"]
 
 class Pieza:
     def __init__(self):
@@ -81,11 +113,16 @@ class Juego:
         for y, fila in enumerate(self.pieza.forma):
             for x, celda in enumerate(fila):
                 if celda:
+                    if self.pieza.y - y >= FILAS - 1:
+                        estado = "GAME_OVER"
+                        detener_musica()
+                        return
                     tablero[self.pieza.y - y][self.pieza.x + x] = self.pieza.color
         limpiar_lineas()
         self.pieza = Pieza()
         if self.colision():
             estado = "GAME_OVER"
+            detener_musica()
 
     def bajar(self):
         if not self.colision(dy=-1):
@@ -102,6 +139,16 @@ class Juego:
         self.pieza.rotar()
         if self.colision():
             self.pieza.forma = copia
+
+
+    # -------- CAÍDA DIRECTA (ESPACIO) --------
+    def caer_directo(self):
+        while not self.colision(dy=-1):
+            self.pieza.y -= 1
+        self.fijar()
+        
+
+
 
 # ---------------- LÓGICA ----------------
 def limpiar_lineas():
@@ -132,7 +179,7 @@ def dibujar_celda(x, y, color):
     dib.end_fill()
 
 def dibujar_cuadricula():
-    dib.color("gray20")
+    dib.color("gray30")
     for x in range(COLUMNAS + 1):
         dib.goto(x * TAM - ANCHO // 2, -ALTO // 2)
         dib.pendown()
@@ -148,14 +195,11 @@ def dibujar_menu():
     dib.clear()
     dib.color("white")
     dib.goto(0, 80)
-    dib.write("TETRIS", align="center", font=("Arial", 32, "bold"))
-
+    dib.write("BIENVENIDO A TETRIS", align="center", font=("Arial", 28, "bold"))
     dib.goto(0, 10)
     dib.write("1 - MODO ARCADE", align="center", font=("Arial", 16, "normal"))
-
     dib.goto(0, -30)
-    dib.write("2 - JUGAR POR NIVEL", align="center", font=("Arial", 16, "normal"))
-
+    dib.write("2 - JUGAR POR NIVELES", align="center", font=("Arial", 16, "normal"))
     pantalla.update()
 
 def dibujar_juego():
@@ -184,34 +228,37 @@ def dibujar_juego():
         dib.goto(160, 210)
         dib.color("orange")
         dib.write(f"Nivel: {nivel}", align="center", font=("Arial", 12, "bold"))
-
         dib.goto(160, 180)
         dib.write(f"Tiempo: {tiempo_restante}s", align="center", font=("Arial", 12, "bold"))
 
     pantalla.update()
 
-def dibujar_nivel_completado():
-    dib.clear()
-    dib.color("green")
-    dib.goto(0, 40)
-    dib.write("NIVEL COMPLETADO", align="center", font=("Arial", 24, "bold"))
-
-    dib.goto(0, -10)
-    dib.write("Presiona ENTER", align="center", font=("Arial", 14, "normal"))
-    pantalla.update()
-
 def dibujar_game_over():
     dib.clear()
     dib.color("red")
-    dib.goto(0, 40)
-    dib.write("GAME OVER", align="center", font=("Arial", 32, "bold"))
+    dib.goto(0, 30)
+    dib.write("PERDISTE 😂😂😂", align="center", font=("Arial", 18, "bold"))
+    dib.goto(0, -20)
+    dib.color("white")
+    dib.write("Presiona ENTER para volver al menú", align="center", font=("Arial", 12, "normal"))
     pantalla.update()
 
 # ---------------- CONTROLES ----------------
 def iniciar_arcade():
+    global estado, modo, tablero, puntaje
+    if estado != "MENU":
+        return
+    tablero = [[0 for _ in range(COLUMNAS)] for _ in range(FILAS)]
+    puntaje = 0
+    modo = "ARCADE"
+    estado = "JUGANDO"
+    
+def iniciar_arcade():
     global modo, estado
     modo = "ARCADE"
     estado = "JUGANDO"
+    iniciar_musica()  
+
 
 def iniciar_niveles():
     global modo, estado, nivel, velocidad_caida, tiempo_inicio
@@ -220,16 +267,28 @@ def iniciar_niveles():
     velocidad_caida = VELOCIDAD_BASE
     tiempo_inicio = time.time()
     estado = "JUGANDO"
+    iniciar_musica()   # 👈 AGREGA ESTA LÍNEA
 
+
+def volver_menu():
+    global estado, modo
+    modo = None
+    estado = "MENU"
+
+def caer_rapido():
+    if estado == "JUGANDO":
+        juego.caer_directo()
+
+pantalla.listen()
 pantalla.onkeypress(iniciar_arcade, "1")
 pantalla.onkeypress(iniciar_niveles, "2")
+pantalla.onkeypress(volver_menu, "Return")
 
 pantalla.onkeypress(lambda: juego.mover(-1), "Left")
 pantalla.onkeypress(lambda: juego.mover(1), "Right")
 pantalla.onkeypress(lambda: juego.bajar(), "Down")
 pantalla.onkeypress(lambda: juego.rotar(), "Up")
-
-pantalla.listen()
+pantalla.onkeypress(caer_rapido, "space")
 
 # ---------------- LOOP ----------------
 juego = Juego()
@@ -249,12 +308,17 @@ def loop():
 
         if modo == "NIVEL":
             if ahora - tiempo_inicio >= TIEMPO_POR_NIVEL:
-                estado = "NIVEL_COMPLETADO"
+                if nivel < MAX_NIVELES:
+                    nivel += 1
+                    velocidad_caida *= 0.85
+                    tiempo_inicio = time.time()
+                else:
+                    estado = "MENU"
 
         dibujar_juego()
 
-    elif estado == "NIVEL_COMPLETADO":
-        dibujar_nivel_completado()
+    elif estado == "GAME_OVER":
+        dibujar_game_over()
 
     pantalla.ontimer(loop, 16)
 
