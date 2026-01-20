@@ -166,18 +166,21 @@ def dibujar_cuadricula():
 def dibujar_menu():
     dib.clear()
     fondo.clear()
-
     fondo.shape("fondo_menu.gif")
     fondo.goto(0, 0)
     fondo.stamp()
 
     dib.color("white")
-    dib.goto(0, 80)
-    dib.write("BIENVENIDO A TETRIS", align="center", font=("Arial", 28, "bold"))
-    dib.goto(0, 10)
+    dib.goto(0, 90)
+    dib.write("BIENVENIDO A TETRIS", align="center", font=("Arial", 26, "bold"))
+    dib.goto(0, 20)
     dib.write("1 - MODO ARCADE", align="center", font=("Arial", 16))
-    dib.goto(0, -30)
+    dib.goto(0, -20)
     dib.write("2 - JUGAR POR NIVELES", align="center", font=("Arial", 16))
+    dib.goto(0, -80)
+    dib.write("FLECHAS: mover / rotar", align="center", font=("Arial", 12))
+    dib.goto(0, -105)
+    dib.write("ESPACIO: caída directa", align="center", font=("Arial", 12))
     pantalla.update()
 
 def dibujar_juego():
@@ -214,25 +217,30 @@ def dibujar_game_over():
     dib.write("PERDISTE 😂😂😂", align="center", font=("Arial", 22, "bold"))
     dib.goto(0, -30)
     dib.color("white")
-    dib.write("Presiona ENTER para volver al menú", align="center", font=("Arial", 12))
+    dib.write("ENTER = menú | R = reiniciar", align="center", font=("Arial", 12))
     pantalla.update()
 
 # ---------------- CONTROLES ----------------
 def iniciar_arcade():
-    global estado, modo, tablero, puntaje
+    global estado, modo, tablero, puntaje, juego, ultimo_tiempo
     fondo.clear()
     tablero = [[0 for _ in range(COLUMNAS)] for _ in range(FILAS)]
     puntaje = 0
+    juego = Juego()
+    ultimo_tiempo = time.time()
     modo = "ARCADE"
     estado = "JUGANDO"
     iniciar_musica()
 
 def iniciar_niveles():
-    global estado, modo, nivel, velocidad_caida, tiempo_inicio
+    global estado, modo, nivel, velocidad_caida, tiempo_inicio, juego, ultimo_tiempo
     fondo.clear()
+    tablero = [[0 for _ in range(COLUMNAS)] for _ in range(FILAS)]
     nivel = 1
     velocidad_caida = VELOCIDAD_BASE
     tiempo_inicio = time.time()
+    ultimo_tiempo = time.time()
+    juego = Juego()
     modo = "NIVEL"
     estado = "JUGANDO"
     iniciar_musica()
@@ -247,6 +255,7 @@ pantalla.listen()
 pantalla.onkeypress(iniciar_arcade, "1")
 pantalla.onkeypress(iniciar_niveles, "2")
 pantalla.onkeypress(volver_menu, "Return")
+pantalla.onkeypress(iniciar_arcade, "r")
 pantalla.onkeypress(lambda: juego.mover(-1), "Left")
 pantalla.onkeypress(lambda: juego.mover(1), "Right")
 pantalla.onkeypress(lambda: juego.bajar(), "Down")
