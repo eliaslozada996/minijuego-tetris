@@ -52,55 +52,27 @@ fondo = turtle.Turtle()
 fondo.hideturtle()
 fondo.penup()
 
-
+# ---------------- PIEZAS ----------------
 FORMAS = [
-    # Tetrominós clásicos
     [[1, 1, 1, 1]],
-
-    [[1, 1],
-     [1, 1]],
-
-    [[0, 1, 0],
-     [1, 1, 1]],
-
-    [[1, 0, 0],
-     [1, 1, 1]],
-
-    [[0, 0, 1],
-     [1, 1, 1]],
-
-    [[0, 1, 1],
-     [1, 1, 0]],
-
-    [[1, 1, 0],
-     [0, 1, 1]],
-
-    # Figuras simples adicionales
+    [[1, 1],[1, 1]],
+    [[0, 1, 0],[1, 1, 1]],
+    [[1, 0, 0],[1, 1, 1]],
+    [[0, 0, 1],[1, 1, 1]],
+    [[0, 1, 1],[1, 1, 0]],
+    [[1, 1, 0],[0, 1, 1]],
     [[1, 1, 1]],
-
-    [[1, 0],
-     [1, 1]],
-
-    [[0, 1],
-     [1, 1]],
-
-    [[1, 1, 1],
-     [0, 1, 0]],
-
-    [[1, 1, 1],
-     [1, 1, 1]]
+    [[1, 0],[1, 1]],
+    [[0, 1],[1, 1]],
+    [[1, 1, 1],[0, 1, 0]],
+    [[1, 1, 1],[1, 1, 1]]
 ]
-
-
-
-
 
 COLORES = [
     "cyan", "yellow", "purple",
     "blue", "orange", "green",
     "red", "pink"
 ]
-
 
 class Pieza:
     def __init__(self):
@@ -207,16 +179,13 @@ def dibujar_cuadricula():
 def dibujar_menu():
     dib.clear()
     fondo.clear()
-
     fondo.shape("fondo_menu.gif")
     fondo.goto(0, 0)
     fondo.stamp()
 
-
-
     dib.color("white")
     dib.goto(0, 150)
-    dib.write("TETRIS", align="center", font=("Arial", 32, "bold"))
+    dib.write("Bienvenidos a Tetris", align="center", font=("Arial", 25, "bold"))
 
     dib.goto(0, 90)
     dib.write("1 - MODO ARCADE", align="center", font=("Arial", 16))
@@ -263,21 +232,18 @@ def dibujar_juego():
 
 def dibujar_game_over():
     dib.clear()
-
     dib.color("red")
     dib.goto(0, 60)
-    dib.write("GAME OVER", align="center", font=("Arial", 28, "bold"))
+    dib.write("PERDISTEEE 💀😂😂", align="center", font=("Arial", 28, "bold"))
 
     dib.color("white")
     dib.goto(0, 10)
     dib.write(f"Puntaje final: {puntaje}", align="center", font=("Arial", 16, "bold"))
 
     dib.goto(0, -40)
-    dib.write("Presiona ENTER para volver al menú",
-              align="center", font=("Arial", 14))
+    dib.write("Presiona ENTER para volver al menú", align="center", font=("Arial", 14))
 
     pantalla.update()
-
 
 # ---------------- CONTROLES ----------------
 def iniciar_arcade():
@@ -338,13 +304,15 @@ def loop():
             juego.bajar()
             ultimo_tiempo = ahora
 
+        # ✅ CAMBIO IMPORTANTE AQUÍ
         if modo == "NIVEL" and ahora - tiempo_inicio >= TIEMPO_POR_NIVEL:
             if nivel < MAX_NIVELES:
                 nivel += 1
-                velocidad_caida *= 0.85
+                velocidad_caida *= 0.65
                 tiempo_inicio = time.time()
             else:
-                volver_menu()
+                estado = "GAME_OVER"
+                detener_musica()
 
         dibujar_juego()
 
