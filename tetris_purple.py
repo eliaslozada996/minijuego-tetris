@@ -52,16 +52,55 @@ fondo = turtle.Turtle()
 fondo.hideturtle()
 fondo.penup()
 
-# ---------------- PIEZAS ----------------
+
 FORMAS = [
+    # Tetrominós clásicos
     [[1, 1, 1, 1]],
-    [[1, 1], [1, 1]],
-    [[0, 1, 0], [1, 1, 1]],
-    [[1, 0, 0], [1, 1, 1]],
-    [[0, 0, 1], [1, 1, 1]]
+
+    [[1, 1],
+     [1, 1]],
+
+    [[0, 1, 0],
+     [1, 1, 1]],
+
+    [[1, 0, 0],
+     [1, 1, 1]],
+
+    [[0, 0, 1],
+     [1, 1, 1]],
+
+    [[0, 1, 1],
+     [1, 1, 0]],
+
+    [[1, 1, 0],
+     [0, 1, 1]],
+
+    # Figuras simples adicionales
+    [[1, 1, 1]],
+
+    [[1, 0],
+     [1, 1]],
+
+    [[0, 1],
+     [1, 1]],
+
+    [[1, 1, 1],
+     [0, 1, 0]],
+
+    [[1, 1, 1],
+     [1, 1, 1]]
 ]
 
-COLORES = ["cyan", "yellow", "purple", "blue", "orange"]
+
+
+
+
+COLORES = [
+    "cyan", "yellow", "purple",
+    "blue", "orange", "green",
+    "red", "pink"
+]
+
 
 class Pieza:
     def __init__(self):
@@ -95,8 +134,10 @@ class Juego:
             for x, celda in enumerate(fila):
                 if celda:
                     tablero[self.pieza.y - y][self.pieza.x + x] = self.pieza.color
+
         limpiar_lineas()
         self.pieza = Pieza()
+
         if self.colision():
             estado = "GAME_OVER"
             detener_musica()
@@ -166,21 +207,31 @@ def dibujar_cuadricula():
 def dibujar_menu():
     dib.clear()
     fondo.clear()
+
     fondo.shape("fondo_menu.gif")
     fondo.goto(0, 0)
     fondo.stamp()
 
+
+
     dib.color("white")
+    dib.goto(0, 150)
+    dib.write("TETRIS", align="center", font=("Arial", 32, "bold"))
+
     dib.goto(0, 90)
-    dib.write("BIENVENIDO A TETRIS", align="center", font=("Arial", 26, "bold"))
-    dib.goto(0, 20)
     dib.write("1 - MODO ARCADE", align="center", font=("Arial", 16))
-    dib.goto(0, -20)
+
+    dib.goto(0, 60)
     dib.write("2 - JUGAR POR NIVELES", align="center", font=("Arial", 16))
-    dib.goto(0, -80)
-    dib.write("FLECHAS: mover / rotar", align="center", font=("Arial", 12))
-    dib.goto(0, -105)
-    dib.write("ESPACIO: caída directa", align="center", font=("Arial", 12))
+
+    dib.goto(0, 10)
+    dib.write("CONTROLES", align="center", font=("Arial", 18, "bold"))
+
+    dib.goto(0, -20)
+    dib.write("← → : Mover   ↑ : Rotar", align="center", font=("Arial", 14))
+    dib.goto(0, -45)
+    dib.write("↓ : Bajar   ESPACIO : Caer directo", align="center", font=("Arial", 14))
+
     pantalla.update()
 
 def dibujar_juego():
@@ -212,13 +263,21 @@ def dibujar_juego():
 
 def dibujar_game_over():
     dib.clear()
+
     dib.color("red")
-    dib.goto(0, 20)
-    dib.write("PERDISTE 😂😂😂", align="center", font=("Arial", 22, "bold"))
-    dib.goto(0, -30)
+    dib.goto(0, 60)
+    dib.write("GAME OVER", align="center", font=("Arial", 28, "bold"))
+
     dib.color("white")
-    dib.write("ENTER = menú | R = reiniciar", align="center", font=("Arial", 12))
+    dib.goto(0, 10)
+    dib.write(f"Puntaje final: {puntaje}", align="center", font=("Arial", 16, "bold"))
+
+    dib.goto(0, -40)
+    dib.write("Presiona ENTER para volver al menú",
+              align="center", font=("Arial", 14))
+
     pantalla.update()
+
 
 # ---------------- CONTROLES ----------------
 def iniciar_arcade():
@@ -233,29 +292,31 @@ def iniciar_arcade():
     iniciar_musica()
 
 def iniciar_niveles():
-    global estado, modo, nivel, velocidad_caida, tiempo_inicio, juego, ultimo_tiempo
+    global estado, modo, nivel, velocidad_caida, tiempo_inicio
+    global tablero, puntaje, juego, ultimo_tiempo
     fondo.clear()
     tablero = [[0 for _ in range(COLUMNAS)] for _ in range(FILAS)]
+    puntaje = 0
+    juego = Juego()
+    ultimo_tiempo = time.time()
     nivel = 1
     velocidad_caida = VELOCIDAD_BASE
     tiempo_inicio = time.time()
-    ultimo_tiempo = time.time()
-    juego = Juego()
     modo = "NIVEL"
     estado = "JUGANDO"
     iniciar_musica()
 
 def volver_menu():
-    global estado, modo
+    global estado, modo, juego
     detener_musica()
     modo = None
     estado = "MENU"
+    juego = Juego()
 
 pantalla.listen()
 pantalla.onkeypress(iniciar_arcade, "1")
 pantalla.onkeypress(iniciar_niveles, "2")
 pantalla.onkeypress(volver_menu, "Return")
-pantalla.onkeypress(iniciar_arcade, "r")
 pantalla.onkeypress(lambda: juego.mover(-1), "Left")
 pantalla.onkeypress(lambda: juego.mover(1), "Right")
 pantalla.onkeypress(lambda: juego.bajar(), "Down")
